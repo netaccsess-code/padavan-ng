@@ -1,0 +1,40 @@
+name: Build Padavan MI-R4A
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install unzip libtool-bin curl cmake gperf gawk flex bison nano tcl \
+          build-essential autoconf automake autopoint gettext texinfo libncurses5-dev libncursesw5-dev \
+          zlib1g-dev python3 fakeroot libssl-dev pkg-config libgmp-dev libmpfr-dev libmpc-dev
+
+      - name: Build toolchain
+        run: |
+          cd toolchain-mipsel
+          ./clean_sources
+          ./build_toolchain
+
+      - name: Build firmware
+        run: |
+          cd trunk
+          # Очистка дерева сборки
+          ./clear_tree
+          # Копирование шаблона конфигурации именно для Mi-R4A
+          cp configs/templates/MI-R4A.config .config
+          # Запуск сборки
+          ./build_firmware
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Padavan-MI-R4A
+          path: trunk/images/*.trx
